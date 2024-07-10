@@ -1620,17 +1620,18 @@ class Workers:
         self.available_requests.put(req)
 
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        icon = QPixmap(32, 32)
-        icon.fill(Qt.GlobalColor.transparent)
-        self.setWindowTitle(' ')
-        self.setWindowIcon(QIcon(icon))
-        pywinstyles.apply_style(self, 'mica')
+        self.setWindowTitle('Free Fire 1.0.0')
+        self.setWindowIcon(QIcon('ff.ico'))
         self.setStyleSheet('QMainWindow { background-color: #222325; }')
         self.setFixedSize(800, 500)
+
+        pywinstyles.apply_style(self, 'mica')
+        pywinstyles.change_title_color(self, color="#b3b3b3")
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -1647,7 +1648,7 @@ class MainWindow(QMainWindow):
 
         signal = pyqtSignal()
         setting_frame = SettingFrame()
-        utility_frame = UtilityFrame()
+        utility_frame = UtilityFrame(signal)
 
         logging_frame = QFrame()
         logging_frame.setFixedWidth(575)
@@ -1667,7 +1668,107 @@ class MainWindow(QMainWindow):
 
 
 class Signals(QObject):
-    pass
+    refresh_child_ui = pyqtSignal()
+
+
+class Messages(QWidget):
+    def __init__(self, title: str, messages: str, icon: str, auto_close: bool, two_button: bool, todo_function=None):
+        super(Messages, self).__init__()
+
+        self.setStyleSheet('''
+            QWidget { 
+                background-color: #222325; 
+                padding-left: 10px;
+                padding-right: 10px;
+                padding-bottom: 10px;
+                padding-top: 0px;
+            }
+            QLabel { 
+                color: #b3b3b3;
+                font-size: 12px;
+            }
+            QPushButton {
+                background-color: #3574F0;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #0056b3;
+            }
+            QPushButton:focus {
+                outline: none;
+            }
+        ''')
+
+        pywinstyles.apply_style(self, 'mica')
+        pywinstyles.change_title_color(self, color='#b3b3b3')
+
+        pixmap = self.get_icon(icon)
+        self.setWindowIcon(QIcon(pixmap))
+        self.setWindowTitle(f"     {title}")
+
+        self.setWindowFlags(Qt.WindowType.WindowCloseButtonHint)
+
+        message_label = QLabel(messages)
+        message_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        message_label.setWordWrap(True)
+        message_label.setMaximumWidth(400)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        if two_button:
+            ok_button = QPushButton('Oke')
+            ok_button.setFixedWidth(100)
+
+            if todo_function:
+                ok_button.clicked.connect(todo_function)
+            else:
+                ok_button.clicked.connect(lambda: self.close())
+
+            cancel_button = QPushButton('Batal')
+            cancel_button.setFixedWidth(100)
+
+            cancel_button.clicked.connect(lambda: self.close())
+
+            button_layout.addWidget(ok_button)
+            button_layout.addWidget(cancel_button)
+
+        else:
+            ok_button = QPushButton('Oke')
+            ok_button.setFixedWidth(100)
+            ok_button.clicked.connect(lambda: self.close())
+
+            button_layout.addWidget(ok_button)
+
+        layout = QVBoxLayout()
+        layout.addWidget(message_label)
+        layout.addLayout(button_layout)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        self.setLayout(layout)
+        self.setFixedSize(self.sizeHint())
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+
+        self.show()
+
+        if auto_close:
+            self.auto_close_timer = QTimer(self)
+            self.auto_close_timer.timeout.connect(self.close)
+            self.auto_close_timer.start(5000)
+
+    def get_icon(self, icon):
+        if icon == "Success":
+            return QPixmap('success.ico')
+        elif icon == "Failed":
+            return QPixmap('failed.ico')
+        elif icon == "Info":
+            return QPixmap('info.ico')
+        else:
+            return QPixmap()
 
 
 class SettingFrame(QFrame):
@@ -1700,7 +1801,6 @@ class SettingFrame(QFrame):
         )
         proxy.setFont(QFont(font_family, 12))
         proxy.setFixedHeight(50)
-
         layout.addWidget(proxy)
 
         layout.setSpacing(0)
@@ -1727,7 +1827,7 @@ class SettingFrame(QFrame):
 
 
 class UtilityFrame(QFrame):
-    def __init__(self):
+    def __init__(self, signal):
         super(UtilityFrame, self).__init__()
 
         self.setFixedWidth(200)
@@ -1737,15 +1837,16 @@ class UtilityFrame(QFrame):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        self.utilityNode = self.UtilityNode()
+        self.utilityNode = self.UtilityNode(signal)
 
         layout.addWidget(self.utilityNode)
         self.setLayout(layout)
 
     class UtilityNode(QTreeWidget):
-        def __init__(self):
+        def __init__(self, signal):
             super().__init__()
             self.setHeaderHidden(True)
+            self.signal = signal
 
             style_sheet = '''
                 QTreeWidget::item { color: #b3b3b3; border: none;}
@@ -1760,15 +1861,14 @@ class UtilityFrame(QFrame):
             self.jabber_node.setText(0, 'Jabber')
             self.jabber_node.setIcon(0, QIcon('jabber.ico'))
 
-            self.requests_node = QTreeWidgetItem(self)
-            self.requests_node.setText(0, 'Api')
-            self.requests_node.setIcon(0, QIcon('api.ico'))
+            self.kiosgamer_node = QTreeWidgetItem(self)
+            self.kiosgamer_node.setText(0, 'Kiosgamer')
+            self.kiosgamer_node.setIcon(0, QIcon('garena-logo.ico'))
 
             self.model = self.Model()
             self.controller = self.Controller(self, self.model)
 
             self.controller.load_jabbers_ui()
-            self.controller.blink_jabber_status()
 
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.show_context_menu)
@@ -1800,6 +1900,17 @@ class UtilityFrame(QFrame):
 
                         menu.addAction(add_jabber_action)
                         menu.exec(self.mapToGlobal(pos))
+
+                if item.parent() is not None and item.parent().text(0) == "Jabber" and item.parent().isExpanded():
+                    connect_action = menu.addAction(QIcon('on.ico'), 'Connect')
+                    disconnect_action = menu.addAction(QIcon('off.ico'), 'Disconnect')
+                    setting_action = menu.addAction(QIcon('settings.ico'), 'Setting')
+                    log_action = menu.addAction(QIcon('log.ico'), 'Log')
+                    delete_action = menu.addAction(QIcon('delete.ico'), 'Hapus')
+
+                    delete_action.triggered.connect(lambda: self.controller.delete_confirmation('web', item))
+
+                    menu.exec(self.mapToGlobal(pos))
 
         class Model:
             def __init__(self):
@@ -1845,9 +1956,6 @@ class UtilityFrame(QFrame):
                 self.view = view
                 self.model = model
                 self.jabber_window = None
-                self.timer = QTimer()
-                self.blinking = False
-                self.timer.timeout.connect(self.toggle_blinking_icons)
 
             def load_jabbers_ui(self):
                 self.view.jabber_node.takeChildren()
@@ -1862,99 +1970,76 @@ class UtilityFrame(QFrame):
                         child.setIcon(0, QIcon('disconnect.ico'))
                         self.view.jabber_node.addChild(child)
 
-            def blink_jabber_status(self):
-                self.timer.start(300)
+            def delete_confirmation(self, type, item):
+                self.view.msg = Messages(
+                    'Confirmation', f'Hapus jabber {item.text(0)} ?', 'Info',
+                    False, True, lambda: self.delete_setting(type, item.text(0), self.view.msg))
 
-            def toggle_blinking_icons(self):
-                self.blinking = not self.blinking
-                for index in range(self.view.jabber_node.childCount()):
-                    child = self.view.jabber_node.child(index)
-                    if self.blinking:
-                        child.setIcon(0, QIcon('connect.ico'))
-                    else:
-                        child.setIcon(0, QIcon('disconnect.ico'))
+            def delete_setting(self, type: str, name: str, msg):
+                self.model.delete_setting(type, name)
+                self.view.signal.refresh_child_ui.emit()
+                msg.close()
 
             def show_jabber_window(self):
                 self.jabber_window = QWidget()
                 self.jabber_window.setFixedSize(250, 180)
                 self.jabber_window.setWindowTitle('Jabber')
                 self.jabber_window.setWindowIcon(QIcon('jabber.ico'))
-                self.jabber_window.setStyleSheet('QWidget { background-color: #101010; }')
-                pywinstyles.change_header_color(self.jabber_window, color='#101010')
 
-                label_label = QLabel('Label  ')
-                label_label.setStyleSheet('color: #b3b3b3;')
+                self.jabber_window.setStyleSheet('QWidget { background-color: #222325; }')
+                pywinstyles.apply_style(self.jabber_window, 'mica')
+                pywinstyles.change_title_color(self.jabber_window, color="#b3b3b3")
+
+                style = '''
+                    QLineEdit {
+                        background-color: #2b2d30;
+                        color: #b3b3b3;
+                        border: 1px solid #202020;
+                        border-radius: 10px;
+                        padding: 5px;
+                        margin: 0px;  /* Ensure there is no margin */
+                    }
+                '''
+                button_style = '''
+                    QPushButton {
+                        background-color: #3574F0;
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                    }
+                    QPushButton:hover {
+                        background-color: #0056b3;
+                    }
+                    QPushButton:focus {
+                        outline: none;
+                    }
+                '''
+
                 label_edit = QLineEdit()
-                label_edit.setStyleSheet('''
-                    QLineEdit {
-                        background-color: #202020;
-                        color: #b3b3b3;
-                        border: 1px solid #202020;
-                        border-radius: 10px;
-                        padding: 5px;
-                    }
-                ''')
+                label_edit.setStyleSheet(style)
+                label_edit.setPlaceholderText('Nama')
 
-                username_label = QLabel('Username  ')
-                username_label.setStyleSheet('color: #b3b3b3;')
                 username_edit = QLineEdit()
-                username_edit.setStyleSheet('''
-                    QLineEdit {
-                        background-color: #202020;
-                        color: #b3b3b3;
-                        border: 1px solid #202020;
-                        border-radius: 10px;
-                        padding: 5px;
-                    }
-                ''')
+                username_edit.setStyleSheet(style)
+                username_edit.setPlaceholderText('Username')
 
-                password_label = QLabel('Password  ')
-                password_label.setStyleSheet('color: #b3b3b3;')
                 password_edit = QLineEdit()
                 password_edit.setEchoMode(QLineEdit.EchoMode.Password)
-                password_edit.setStyleSheet('''
-                    QLineEdit {
-                        background-color: #202020;
-                        color: #b3b3b3;
-                        border: 1px solid #202020;
-                        border-radius: 10px;
-                        padding: 5px;
-                    }
-                ''')
+                password_edit.setStyleSheet(style)
+                password_edit.setPlaceholderText('Password')
 
                 save_button = QPushButton('Tambah')
-                save_button.setStyleSheet('''
-                    QPushButton {
-                        background-color: #007BFF;
-                        color: white;
-                        border: none;
-                        border-radius: 10px;
-                        padding: 5px 10px;
-                    }
-                    QPushButton:hover {
-                        background-color: #0056b3;
-                    }
-                ''')
+                save_button.setStyleSheet(button_style)
 
                 cancel_button = QPushButton('Batal')
-                cancel_button.setStyleSheet('''
-                    QPushButton {
-                        background-color: #007BFF;
-                        color: white;
-                        border: none;
-                        border-radius: 10px;
-                        padding: 5px 10px;
-                    }
-                    QPushButton:hover {
-                        background-color: #0056b3;
-                    }
-                ''')
+                cancel_button.setStyleSheet(button_style)
 
                 form_layout = QFormLayout()
                 form_layout.setContentsMargins(5, 5, 5, 0)
-                form_layout.addRow(label_label, label_edit)
-                form_layout.addRow(username_label, username_edit)
-                form_layout.addRow(password_label, password_edit)
+                form_layout.addRow(label_edit)
+                form_layout.addRow(username_edit)
+                form_layout.addRow(password_edit)
 
                 button_layout = QHBoxLayout()
                 button_layout.setContentsMargins(5, 0, 5, 5)
