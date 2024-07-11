@@ -1625,7 +1625,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        self.setWindowTitle('Free Fire 1.0.0')
+        self.setWindowTitle(' ')
         self.setWindowIcon(QIcon('ff.ico'))
         self.setStyleSheet('QMainWindow { background-color: #222325; }')
         self.setFixedSize(800, 500)
@@ -1646,7 +1646,7 @@ class MainWindow(QMainWindow):
 
         central_layout.addWidget(left_container)
 
-        signal = pyqtSignal()
+        signal = Signals()
         setting_frame = SettingFrame()
         utility_frame = UtilityFrame(signal)
 
@@ -1847,6 +1847,7 @@ class UtilityFrame(QFrame):
             super().__init__()
             self.setHeaderHidden(True)
             self.signal = signal
+            self.msg = None
 
             style_sheet = '''
                 QTreeWidget::item { color: #b3b3b3; border: none;}
@@ -1908,15 +1909,15 @@ class UtilityFrame(QFrame):
                     log_action = menu.addAction(QIcon('log.ico'), 'Log')
                     delete_action = menu.addAction(QIcon('delete.ico'), 'Hapus')
 
-                    delete_action.triggered.connect(lambda: self.controller.delete_confirmation('web', item))
+                    delete_action.triggered.connect(lambda: self.controller.delete_confirmation('jabber', item))
 
                     menu.exec(self.mapToGlobal(pos))
 
         class Model:
             def __init__(self):
-                self.path = os.path.join(os.getcwd(), 'jabbers.pkl')
-                if not os.path.exists(self.path):
-                    with open(self.path, 'wb') as f:
+                self.jabbers_path = os.path.join(os.getcwd(), 'jabbers.pkl')
+                if not os.path.exists(self.jabbers_path):
+                    with open(self.jabbers_path, 'wb') as f:
                         data = {
                             "data": []
                         }
@@ -1925,8 +1926,25 @@ class UtilityFrame(QFrame):
                     self.jabbers = self.load_jabbers()
                     print(self.jabbers)
 
+            def delete(self, type: str, name: str):
+                if type == 'jabber':
+                    with open(self.jabbers_path, 'rb') as f:
+                        data = cPickle.load(f)
+
+                    target_index = None
+                    for index, item in enumerate(data['data']):
+                        if item.get('label') == name:
+                            target_index = index
+                            break
+
+                    if target_index is not None:
+                        del data['data'][target_index]
+
+                    with open(self.jabbers_path, 'wb') as f:
+                        cPickle.dump(data, f)
+
             def load_jabbers(self) -> list:
-                with open(self.path, 'rb') as f:
+                with open(self.jabbers_path, 'rb') as f:
                     data = cPickle.load(f)
 
                 if len(data.get('data')) > 0:
@@ -1936,7 +1954,7 @@ class UtilityFrame(QFrame):
                     return []
 
             def save_jabber(self, label: str, username: str, password: str, window) -> None:
-                with open(self.path, 'rb') as f:
+                with open(self.jabbers_path, 'rb') as f:
                     data = cPickle.load(f)
 
                 new_entry = {
@@ -1946,16 +1964,19 @@ class UtilityFrame(QFrame):
                 }
 
                 data['data'].append(new_entry)
-                with open(self.path, 'wb') as f:
+                with open(self.jabbers_path, 'wb') as f:
                     cPickle.dump(data, f)
 
                 window.close()
+
 
         class Controller:
             def __init__(self, view, model):
                 self.view = view
                 self.model = model
                 self.jabber_window = None
+
+                self.view.signal.refresh_child_ui.connect(self.load_jabbers_ui)
 
             def load_jabbers_ui(self):
                 self.view.jabber_node.takeChildren()
@@ -1973,12 +1994,16 @@ class UtilityFrame(QFrame):
             def delete_confirmation(self, type, item):
                 self.view.msg = Messages(
                     'Confirmation', f'Hapus jabber {item.text(0)} ?', 'Info',
-                    False, True, lambda: self.delete_setting(type, item.text(0), self.view.msg))
+                    False, True, lambda: self.delete(type, item.text(0), self.view.msg))
 
-            def delete_setting(self, type: str, name: str, msg):
-                self.model.delete_setting(type, name)
+            def delete(self, type: str, name: str, msg):
+                self.model.delete(type, name)
                 self.view.signal.refresh_child_ui.emit()
                 msg.close()
+
+            def save_jabber(self, label: str, username: str, password: str, window):
+                self.model.save_jabber(label, username, password, window)
+                self.view.signal.refresh_child_ui.emit()
 
             def show_jabber_window(self):
                 self.jabber_window = QWidget()
@@ -2062,7 +2087,13 @@ class UtilityFrame(QFrame):
                 self.jabber_window.show()
 
 
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
+
 if __name__ == "__main__":
+    sys.excepthook = except_hook
+
     if sys.platform.startswith('win'):
         multiprocessing.freeze_support()
 
