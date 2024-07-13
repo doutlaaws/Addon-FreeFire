@@ -1902,11 +1902,11 @@ class UtilityFrame(QFrame):
                         menu.exec(self.mapToGlobal(pos))
 
                 if item.parent() is not None and item.parent().text(0) == "Jabber" and item.parent().isExpanded():
-                    connect_action = menu.addAction(QIcon('on.ico'), 'Connect')
-                    disconnect_action = menu.addAction(QIcon('off.ico'), 'Disconnect')
-                    setting_action = menu.addAction(QIcon('settings.ico'), 'Setting')
-                    log_action = menu.addAction(QIcon('log.ico'), 'Log')
-                    delete_action = menu.addAction(QIcon('delete.ico'), 'Hapus')
+                    connect_action = menu.addAction(QIcon('./src/on.ico'), 'Connect')
+                    disconnect_action = menu.addAction(QIcon('./src/off.ico'), 'Disconnect')
+                    setting_action = menu.addAction(QIcon('./src/settings.ico'), 'Setting')
+                    log_action = menu.addAction(QIcon('./src/log.ico'), 'Log')
+                    delete_action = menu.addAction(QIcon('./src/delete.ico'), 'Hapus')
 
                     setting_action.triggered.connect(lambda: self.controller.show_setting_window())
                     delete_action.triggered.connect(lambda: self.controller.delete_confirmation('jabber', item))
