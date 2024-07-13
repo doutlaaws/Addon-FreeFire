@@ -7,26 +7,13 @@ import multiprocessing
 import time
 import pywinstyles
 import os
-import _pickle as cPickle
+import pickle as cPickle
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue, Empty
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMainWindow,  QWidget, QLabel,QPushButton,QLineEdit,QHBoxLayout,QVBoxLayout,QFormLayout,QMenu,QTreeWidget,QTreeWidgetItem,QFrame, QListWidget
 from PyQt6.QtCore import Qt, QObject, pyqtSignal, QTimer
 from PyQt6.QtGui import QIcon, QAction, QPixmap, QColor, QKeySequence, QFontDatabase, QFont, QCursor
-from PyQt6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QLabel,
-    QPushButton,
-    QLineEdit,
-    QHBoxLayout,
-    QVBoxLayout,
-    QFormLayout,
-    QMenu,
-    QTreeWidget,
-    QTreeWidgetItem,
-    QFrame
-)
+
 
 
 class Jabber(sleekxmpp.ClientXMPP):
@@ -1626,7 +1613,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
 
         self.setWindowTitle(' ')
-        self.setWindowIcon(QIcon('ff.ico'))
+        self.setWindowIcon(QIcon('./src/ff.ico'))  
         self.setStyleSheet('QMainWindow { background-color: #222325; }')
         self.setFixedSize(800, 500)
 
@@ -1665,6 +1652,9 @@ class MainWindow(QMainWindow):
 
         central_layout.addWidget(left_container)
         central_layout.addWidget(logging_frame)
+
+        self.show()  # Panggil show() di akhir __init__() untuk menampilkan jendela
+
 
 
 class Signals(QObject):
@@ -1762,13 +1752,15 @@ class Messages(QWidget):
 
     def get_icon(self, icon):
         if icon == "Success":
-            return QPixmap('success.ico')
+            return QPixmap('./success.ico')
         elif icon == "Failed":
-            return QPixmap('failed.ico')
+            return QPixmap('./failed.ico')
         elif icon == "Info":
-            return QPixmap('info.ico')
+            return QPixmap('./info.ico')
         else:
             return QPixmap()
+
+
 
 
 class SettingFrame(QFrame):
@@ -1779,13 +1771,13 @@ class SettingFrame(QFrame):
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setStyleSheet('QFrame { background-color: #2b2d30; border-radius: 15px; }')
 
-        font_path = os.path.join(os.getcwd(), 'ClashGrotesk-Medium.otf')
+        font_path = os.path.join(os.getcwd(), 'src', 'ClashGrotesk-Medium.otf')
+
         font_id = QFontDatabase.addApplicationFont(font_path)
         font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
 
         layout = QVBoxLayout()
-
-        proxy = self.HoverButton('proxy32.ico', 'proxy-hover.ico', '  Proxy')
+        proxy = HoverButton('.\\src\\proxy32.ico', '.\\src\\proxy-hover.ico', '  Proxy')
         proxy.setStyleSheet(
             f'''
             QPushButton {{
@@ -1808,22 +1800,25 @@ class SettingFrame(QFrame):
 
         self.setLayout(layout)
 
-    class HoverButton(QPushButton):
-        def __init__(self, normal_icon_path, hover_icon_path, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.normal_icon = QIcon(normal_icon_path)
-            self.hover_icon = QIcon(hover_icon_path)
-            self.setIcon(self.normal_icon)
+        self.show()
 
-        def enterEvent(self, event):
-            self.setIcon(self.hover_icon)
-            self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            super().enterEvent(event)
 
-        def leaveEvent(self, event):
-            self.setIcon(self.normal_icon)
-            self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            super().leaveEvent(event)
+class HoverButton(QPushButton):
+    def __init__(self, normal_icon_path, hover_icon_path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.normal_icon = QIcon(normal_icon_path)
+        self.hover_icon = QIcon(hover_icon_path)
+        self.setIcon(self.normal_icon)
+
+    def enterEvent(self, event):
+        self.setIcon(self.hover_icon)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.setIcon(self.normal_icon)
+        self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+        super().leaveEvent(event)
 
 
 class UtilityFrame(QFrame):
@@ -1860,11 +1855,12 @@ class UtilityFrame(QFrame):
 
             self.jabber_node = QTreeWidgetItem(self)
             self.jabber_node.setText(0, 'Jabber')
-            self.jabber_node.setIcon(0, QIcon('jabber.ico'))
+            self.jabber_node.setIcon(0, QIcon('C:/Users/Lenovo/Documents/GitHub/Addon-FreeFire/src/jabber.ico'))
 
             self.kiosgamer_node = QTreeWidgetItem(self)
             self.kiosgamer_node.setText(0, 'Kiosgamer')
-            self.kiosgamer_node.setIcon(0, QIcon('garena-logo.ico'))
+            self.kiosgamer_node.setIcon(0, QIcon('C:/Users/Lenovo/Documents/GitHub/Addon-FreeFire/src/garena-logo.ico'))
+
 
             self.model = self.Model()
             self.controller = self.Controller(self, self.model)
@@ -1896,10 +1892,13 @@ class UtilityFrame(QFrame):
 
                 match item.text(0):
                     case 'Jabber':
-                        add_jabber_action = QAction(QIcon('tambah.ico'), 'Tambah', menu)
+                        add_jabber_action = QAction(QIcon('./src/tambah.ico'), 'Tambah', menu)
                         add_jabber_action.triggered.connect(lambda: self.controller.show_jabber_window())
+                        add_refresh_action = QAction(QIcon('./src/refresh.ico'), 'Refresh', menu)
+                        add_refresh_action.triggered.connect(lambda: self.controller.refresh_data())
 
                         menu.addAction(add_jabber_action)
+                        menu.addAction(add_refresh_action)
                         menu.exec(self.mapToGlobal(pos))
 
                 if item.parent() is not None and item.parent().text(0) == "Jabber" and item.parent().isExpanded():
@@ -1909,9 +1908,12 @@ class UtilityFrame(QFrame):
                     log_action = menu.addAction(QIcon('log.ico'), 'Log')
                     delete_action = menu.addAction(QIcon('delete.ico'), 'Hapus')
 
+                    setting_action.triggered.connect(lambda: self.controller.show_setting_window())
                     delete_action.triggered.connect(lambda: self.controller.delete_confirmation('jabber', item))
 
-                    menu.exec(self.mapToGlobal(pos))
+                menu.exec(self.mapToGlobal(pos))
+
+
 
         class Model:
             def __init__(self):
@@ -1967,29 +1969,42 @@ class UtilityFrame(QFrame):
                 with open(self.jabbers_path, 'wb') as f:
                     cPickle.dump(data, f)
 
-                window.close()
+            def get_jabber_info(self, label: str):
+                with open(self.jabbers_path, 'rb') as f:
+                    data = cPickle.load(f)
+
+                for item in data['data']:
+                    if item['label'] == label:
+                        return {'username': item['username'], 'password': item['password']}
+
+                return None
+
+            def get_all_jabbers(self):
+                return self.jabbers
 
 
         class Controller:
+            refresh_ui_signal = pyqtSignal()
+            
             def __init__(self, view, model):
                 self.view = view
                 self.model = model
                 self.jabber_window = None
-
+                self.setting_window = None
                 self.view.signal.refresh_child_ui.connect(self.load_jabbers_ui)
 
             def load_jabbers_ui(self):
+        
                 self.view.jabber_node.takeChildren()
-                existing_jabber = {
-                    self.view.jabber_node.child(index).text(0) for index in range(self.view.jabber_node.childCount())
-                }
-
                 for jabber in self.model.jabbers:
-                    if jabber not in existing_jabber:
-                        child = QTreeWidgetItem()
-                        child.setText(0, jabber)
-                        child.setIcon(0, QIcon('disconnect.ico'))
-                        self.view.jabber_node.addChild(child)
+                    child = QTreeWidgetItem()
+                    child.setText(0, jabber)
+                    child.setIcon(0, QIcon('disconnect.ico'))  
+                    self.view.jabber_node.addChild(child)
+
+            def refresh_data(self):
+                self.model.load_jabbers()  # Reload data jabber dari file
+                self.load_jabbers_ui()  
 
             def delete_confirmation(self, type, item):
                 self.view.msg = Messages(
@@ -2001,15 +2016,18 @@ class UtilityFrame(QFrame):
                 self.view.signal.refresh_child_ui.emit()
                 msg.close()
 
-            def save_jabber(self, label: str, username: str, password: str, window):
-                self.model.save_jabber(label, username, password, window)
-                self.view.signal.refresh_child_ui.emit()
+            def save_jabber(self, label: str, username: str, password: str):
+                self.model.save_jabber(label, username, password, self.jabber_window)
+                self.refresh_data() 
+                if self.jabber_window:
+                 self.jabber_window.close() 
+        
 
             def show_jabber_window(self):
                 self.jabber_window = QWidget()
                 self.jabber_window.setFixedSize(250, 180)
                 self.jabber_window.setWindowTitle('Jabber')
-                self.jabber_window.setWindowIcon(QIcon('jabber.ico'))
+                self.jabber_window.setWindowIcon(QIcon('jabber.ico')) 
 
                 self.jabber_window.setStyleSheet('QWidget { background-color: #222325; }')
                 pywinstyles.apply_style(self.jabber_window, 'mica')
@@ -2062,9 +2080,9 @@ class UtilityFrame(QFrame):
 
                 form_layout = QFormLayout()
                 form_layout.setContentsMargins(5, 5, 5, 0)
-                form_layout.addRow(label_edit)
-                form_layout.addRow(username_edit)
-                form_layout.addRow(password_edit)
+                form_layout.addRow('Nama', label_edit)
+                form_layout.addRow('Username', username_edit)
+                form_layout.addRow('Password', password_edit)
 
                 button_layout = QHBoxLayout()
                 button_layout.setContentsMargins(5, 0, 5, 5)
@@ -2078,17 +2096,96 @@ class UtilityFrame(QFrame):
                 self.jabber_window.setLayout(main_layout)
 
                 cancel_button.clicked.connect(lambda: self.jabber_window.close())
-                save_button.clicked.connect(
-                    lambda: self.model.save_jabber(
-                        label_edit.text(), username_edit.text(),
-                        password_edit.text(), self.jabber_window)
-                )
+                save_button.clicked.connect(lambda: self.save_jabber(label_edit.text(), username_edit.text(), password_edit.text()))
+
 
                 self.jabber_window.show()
 
 
+            def show_setting_window(self):
+                self.setting_window = QWidget()
+                self.setting_window.setFixedSize(300, 200)
+                self.setting_window.setWindowTitle('Setting')
+                self.setting_window.setWindowIcon(QIcon('C:/Users/Lenovo/Documents/GitHub/Addon-FreeFire/src/settings.ico'))
+                self.setting_window.setStyleSheet('QWidget { background-color: #222325; }')
+                pywinstyles.apply_style(self.setting_window, 'mica')
+                pywinstyles.change_title_color(self.setting_window, color="#b3b3b3")
+
+                # Buat layout sebagai atribut self
+                self.layout = QVBoxLayout()
+
+                jabber_list_widget = QListWidget()
+                jabber_list_widget.setStyleSheet('''
+                    QListWidget {
+                        background-color: #2b2d30;
+                        color: #b3b3b3;
+                        border: 1px solid #4b4d50;
+                    }
+                    QListWidget::item {
+                        background-color: #2b2d30;
+                    }
+                    QListWidget::item:selected {
+                        background-color: #2e436e; 
+                    }
+                ''')
+
+                for jabber in self.model.jabbers:
+                    jabber_list_widget.addItem(jabber)
+
+                def update_displayed_info(item):
+                    if item is not None:
+                        jabber_label = item.text()
+                        jabber_info = self.model.get_jabber_info(jabber_label)  # Pastikan ini mengambil info yang tepat
+
+                        # Clear existing layout
+                        while self.layout.count():
+                            child = self.layout.takeAt(0)
+                            if child.widget():
+                                child.widget().deleteLater()
+
+                        if jabber_info:
+                            username_label = QLabel(f"Username: {jabber_info['username']}")
+                            password_label = QLabel(f"Password: {jabber_info['password']}")
+
+                            self.layout.addWidget(username_label)
+                            self.layout.addWidget(password_label)
+
+                jabber_list_widget.itemSelectionChanged.connect(lambda: update_displayed_info(jabber_list_widget.currentItem()))
+
+                # Close button
+                close_button = QPushButton('Tutup')
+                close_button.setStyleSheet('''
+                    QPushButton {
+                        background-color: #3574F0;
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                    }
+                    QPushButton:hover {
+                        background-color: #0056b3;
+                    }
+                    QPushButton:focus {
+                        outline: none;
+                    }
+                ''')
+                close_button.clicked.connect(self.setting_window.close)
+
+                # Add widgets to layout
+                self.layout.addWidget(jabber_list_widget)
+                self.layout.addWidget(close_button)
+
+                # Set layout for setting window
+                self.setting_window.setLayout(self.layout)
+                self.setting_window.show()
+
+
 def except_hook(cls, exception, traceback):
-    sys.__excepthook__(cls, exception, traceback)
+    """
+    Fungsi kait penanganan pengecualian kustom.
+    """
+    # Tangani pengecualian di sini, contohnya dengan mencatat log
+    print(f"Terjadi pengecualian: {exception}")
 
 
 if __name__ == "__main__":
@@ -2101,6 +2198,7 @@ if __name__ == "__main__":
 
     window = MainWindow()
     window.show()
+    
 
     sys.exit(app.exec())
 

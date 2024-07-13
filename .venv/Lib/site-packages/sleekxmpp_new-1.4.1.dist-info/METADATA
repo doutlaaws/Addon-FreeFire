@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: sleekxmpp-new
+Version: 1.4.1
+Summary: SleekXMPP is an elegant Python library for XMPP (aka Jabber, Google Talk, etc).
+Home-page: http://github.com/Den4ikSuperOstryyPer4ik/SleekXMPP-New/
+Author: Nathanael Fritz
+Author-email: fritzy@netflint.net
+License: MIT
+Platform: any
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires: dnspython
+Requires: pyasn1
+Requires: pyasn1_modules
+License-File: LICENSE
+
+https://pypi.org/project/sleekxmpp/
